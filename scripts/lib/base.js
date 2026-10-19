@@ -6,7 +6,7 @@ export const DEFAULT_SINCE = '4 weeks ago';
  * Decides what to diff scope against: the previous run's commit, if it's
  * still reachable from HEAD, or a time-based fallback otherwise.
  */
-export function base(dir, sha, { since = DEFAULT_SINCE } = {}) {
+export function base(dir, sha, since = DEFAULT_SINCE) {
   if (!sha) {
     return {
       method: 'fallback',

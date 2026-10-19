@@ -41,7 +41,7 @@ test('base: falls back when last_run.sha is no longer an ancestor of HEAD (e.g. 
     repo.run(['reset', '--hard', sha1]);
     repo.commit({ 'a.txt': 'rewritten' }, { message: 'rewritten history' });
 
-    const result = base(repo.dir, abandonedSha, { since: '2 weeks ago' });
+    const result = base(repo.dir, abandonedSha, '2 weeks ago');
     assert.equal(result.method, 'fallback');
     assert.equal(result.base, null);
     assert.equal(result.since, '2 weeks ago');
