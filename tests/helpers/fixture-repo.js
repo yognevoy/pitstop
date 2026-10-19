@@ -51,10 +51,10 @@ function writeFiles(dir, files) {
   }
 }
 
-function git(cwd, args, extraEnv = {}) {
+function git(cwd, args, env = {}) {
   return execFileSync('git', args, {
     cwd,
-    env: { ...process.env, ...ISOLATED_ENV, ...extraEnv },
+    env: { ...process.env, ...ISOLATED_ENV, ...env },
     encoding: 'utf8',
   });
 }
