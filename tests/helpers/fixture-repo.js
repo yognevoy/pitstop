@@ -21,7 +21,7 @@ export function createFixtureRepo() {
 
   return {
     dir,
-    run: (args) => git(dir, args),
+    run: (args, env) => git(dir, args, env),
     commit(files, { message = 'commit', date = '2024-01-01T00:00:00Z', author = DEFAULT_AUTHOR } = {}) {
       writeFiles(dir, files);
       git(dir, ['add', '-A']);
