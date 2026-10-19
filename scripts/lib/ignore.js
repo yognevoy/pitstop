@@ -42,6 +42,11 @@ export function matchesPattern(path, pattern) {
   return new RegExp(prefix + core + suffix).test(path);
 }
 
+function toRegex(pattern) {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]');
+}
+
 export function isIgnored(path, patterns) {
   return patterns.some((pattern) => matchesPattern(path, pattern));
 }
@@ -92,9 +97,4 @@ export function filterScope(dir, paths, extraPatterns = []) {
 
     return true;
   });
-}
-
-function toRegex(pattern) {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  return escaped.replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]');
 }
