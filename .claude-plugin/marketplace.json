@@ -1,0 +1,16 @@
+{
+  "name": "pitstop",
+  "description": "A pit crew for your codebase. Check the wear, keep the pace.",
+  "owner": {
+    "name": "Yaroslav Ognevoy",
+    "url": "https://github.com/yognevoy"
+  },
+  "plugins": [
+    {
+      "name": "pitstop",
+      "source": ".",
+      "description": "Scheduled maintenance for AI codebases. Catches the drift reviews miss and lines it up.",
+      "category": "code-quality"
+    }
+  ]
+}
