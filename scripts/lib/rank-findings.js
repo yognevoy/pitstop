@@ -4,7 +4,7 @@ const SEVERITY_RANK = { must: 3, should: 2, nice: 1 };
  * Sorts findings by severity, then confidence descending,
  * then the first anchor's file. Truncates to topK.
  */
-export function prioritize(findings, topK) {
+export function rankFindings(findings, topK) {
   const sorted = [...findings].sort(compareFindings);
   return sorted.slice(0, topK);
 }
