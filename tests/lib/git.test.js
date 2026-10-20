@@ -42,3 +42,15 @@ test('git: throws a GitError carrying git\'s own stderr for other failures', () 
     repo.cleanup();
   }
 });
+
+test('git: rev-parse --show-toplevel resolves the real root even from a subdirectory', () => {
+  const repo = createFixtureRepo();
+  try {
+    repo.commit({ 'src/a.js': 'one' });
+
+    const root = git(join(repo.dir, 'src'), ['rev-parse', '--show-toplevel']).trim();
+    assert.equal(root, repo.dir);
+  } finally {
+    repo.cleanup();
+  }
+});
