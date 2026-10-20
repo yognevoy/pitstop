@@ -2,7 +2,7 @@
  * Ranks churn() results by number of commits, then by total changed lines,
  * then by path for a deterministic order; truncates to maxFiles.
  */
-export function rank(churn, maxFiles) {
+export function rankChurn(churn, maxFiles) {
   const files = Object.entries(churn).map(([path, stats]) => ({
     path,
     commits: stats.commits,

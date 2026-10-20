@@ -5,7 +5,7 @@ import { base } from './lib/base.js';
 import { git } from './lib/git.js';
 import { churn } from './lib/churn.js';
 import { filterScope, parsePitstopIgnore } from './lib/ignore.js';
-import { rank } from './lib/rank.js';
+import { rankChurn } from './lib/rank-churn.js';
 
 const MAX_FILES = { quick: 15, full: 40, deep: 80 };
 
@@ -39,7 +39,7 @@ export function scope(dir, level) {
     level,
     base: result,
     generated_at: new Date().toISOString(),
-    files: rank(keptChurn, MAX_FILES[level]),
+    files: rankChurn(keptChurn, MAX_FILES[level]),
   };
 }
 
