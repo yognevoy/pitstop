@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { commitState } from '../scripts/commit-state.js';
@@ -64,6 +64,29 @@ test('commitState: creates .pitstop/reports when .pitstop does not exist yet', (
     assert.equal(existsSync(join(dir, '.pitstop')), false);
     commitState(dir, params());
     assert.equal(existsSync(join(dir, '.pitstop/reports')), true);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('commitState: leaves an existing state.json untouched when it fails before reaching that step', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    mkdirSync(join(dir, '.pitstop'), { recursive: true });
+    const oldState = JSON.stringify({
+      version: 1,
+      plugin_version: '0.0.9',
+      last_run: { sha: 'old-sha', date: '2020-01-01T00:00:00Z', level: 'full' },
+    });
+    writeFileSync(join(dir, '.pitstop/state.json'), oldState);
+
+    // Forces mkdirSync(dirname(reportPath), { recursive: true }) to throw,
+    // before commitState writes anything: 'reports' already exists as a file.
+    writeFileSync(join(dir, '.pitstop/reports'), 'not a directory');
+
+    assert.throws(() => commitState(dir, params()));
+    assert.equal(readFileSync(join(dir, '.pitstop/state.json'), 'utf8'), oldState);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
