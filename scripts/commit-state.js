@@ -1,5 +1,6 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { writeAtomic } from './lib/atomic-write.js';
 import { git } from './lib/git.js';
 import { report } from './lib/report.js';
 import { read, store } from './lib/registry.js';
@@ -37,13 +38,6 @@ export function commitState(dir, { report: reportText, run, pluginVersion, regis
   }
 
   return { reportPath, statePath };
-}
-
-function writeAtomic(path, content) {
-  const tmpPath = `${path}.tmp`;
-
-  writeFileSync(tmpPath, content);
-  renameSync(tmpPath, path);
 }
 
 function main() {
