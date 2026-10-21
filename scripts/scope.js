@@ -74,10 +74,10 @@ function main() {
 
   const dir = git(process.cwd(), ['rev-parse', '--show-toplevel']).trim();
   const outPath = join(dir, '.pitstop/run/scope.json');
-  const wontfixPath = join(dir, '.pitstop/run/wontfix.json');
+  const baselinePath = join(dir, '.pitstop/run/baseline.json');
 
   const result = scope(dir, values.level);
-  const wontfixByFile = scoped(
+  const baselineByFile = scoped(
     read(dir),
     (record) => record.status === 'wontfix',
     result.files.map((file) => file.path),
@@ -85,7 +85,7 @@ function main() {
 
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(result, null, 2));
-  writeFileSync(wontfixPath, JSON.stringify(wontfixByFile, null, 2));
+  writeFileSync(baselinePath, JSON.stringify(baselineByFile, null, 2));
   console.log(`Wrote ${result.files.length} file(s) to ${outPath} (${result.base.method}: ${result.base.reason})`);
 }
 
