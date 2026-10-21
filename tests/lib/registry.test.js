@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scoped, store } from '../../scripts/lib/registry.js';
+import { scoped, setStatus, store } from '../../scripts/lib/registry.js';
 
 const RUN_1 = { date: '2026-10-19T10:00:00Z', sha: 'a3f9e1c' };
 const RUN_2 = { date: '2026-10-26T10:00:00Z', sha: 'b7c2d4e' };
@@ -33,7 +33,6 @@ test('store: a brand-new finding becomes an open record', () => {
   assert.match(result[0].id, /^f_[0-9a-f]{8}$/);
   assert.equal(result[0].status, 'open');
   assert.equal(result[0].status_reason, null);
-  assert.equal(result[0].deferred_until, null);
   assert.deepEqual(result[0].first_seen, RUN_1);
   assert.deepEqual(result[0].last_seen, RUN_1);
   assert.equal(result[0].seen_count, 1);
@@ -172,4 +171,62 @@ test('scoped: omits a record the predicate rejects', () => {
   const result = scoped(opened, isWontfix, ['services/billing/tax.ts']);
 
   assert.deepEqual(result, {});
+});
+
+const TODAY = '2026-10-26';
+
+test('setStatus: sets fixed with no reason needed', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  const result = setStatus(opened, opened[0].id, 'fixed', { today: TODAY });
+
+  assert.equal(result[0].status, 'fixed');
+  assert.equal(result[0].status_reason, null);
+  assert.equal(result[0].history.at(-1).event, 'fixed');
+});
+
+test('setStatus: wontfix requires a reason', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  assert.throws(() => setStatus(opened, opened[0].id, 'wontfix', { today: TODAY }));
+});
+
+test('setStatus: wontfix with a reason sets status_reason', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  const result = setStatus(opened, opened[0].id, 'wontfix', { reason: 'intentional', today: TODAY });
+
+  assert.equal(result[0].status, 'wontfix');
+  assert.equal(result[0].status_reason, 'intentional');
+});
+
+test('setStatus: moving away from wontfix clears status_reason', () => {
+  const opened = store([], [finding()], RUN_1);
+  const wontfixed = setStatus(opened, opened[0].id, 'wontfix', { reason: 'intentional', today: TODAY });
+
+  const result = setStatus(wontfixed, wontfixed[0].id, 'open', { today: TODAY });
+
+  assert.equal(result[0].status, 'open');
+  assert.equal(result[0].status_reason, null);
+});
+
+test('setStatus: rejects an unknown status', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  assert.throws(() => setStatus(opened, opened[0].id, 'bogus', { today: TODAY }));
+});
+
+test('setStatus: rejects an unknown id', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  assert.throws(() => setStatus(opened, 'f_doesnotexist', 'fixed', { today: TODAY }));
+});
+
+test('setStatus: does not mutate its input records', () => {
+  const opened = store([], [finding()], RUN_1);
+  const snapshot = JSON.parse(JSON.stringify(opened));
+
+  setStatus(opened, opened[0].id, 'fixed', { today: TODAY });
+
+  assert.deepEqual(opened, snapshot);
 });

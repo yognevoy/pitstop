@@ -34,7 +34,6 @@ export function store(existing, findings, run) {
       ...finding,
       status: 'open',
       status_reason: null,
-      deferred_until: null,
       first_seen: { date: run.date, sha: run.sha },
       last_seen: { date: run.date, sha: run.sha },
       seen_count: 1,
@@ -66,6 +65,37 @@ export function scoped(records, isMatch, scopeFiles) {
   }
 
   return byFile;
+}
+
+const STATUSES = ['open', 'fixed', 'wontfix'];
+
+// Changes one record's status by id. wontfix requires a reason, cleared
+// when the status is anything else.
+export function setStatus(records, id, status, { reason, today }) {
+  if (!STATUSES.includes(status)) {
+    throw new Error(`Unknown status "${status}". Expected one of: ${STATUSES.join(', ')}.`);
+  }
+
+  if (status === 'wontfix' && !reason) {
+    throw new Error('wontfix requires a reason.');
+  }
+
+  if (!records.some((record) => record.id === id)) {
+    throw new Error(`No finding with id "${id}".`);
+  }
+
+  return records.map((record) => {
+    if (record.id !== id) {
+      return record;
+    }
+
+    return {
+      ...record,
+      status,
+      status_reason: status === 'wontfix' ? reason : null,
+      history: [...record.history, { date: today, event: status }],
+    };
+  });
 }
 
 function recordId(category, anchors) {
