@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { commitState } from '../scripts/commit-state.js';
@@ -8,9 +8,7 @@ import { commitState } from '../scripts/commit-state.js';
 function params(overrides = {}) {
   return {
     report: '# Pitstop report\n',
-    sha: 'a3f9e1c',
-    level: 'full',
-    generatedAt: '2026-10-19T10:00:00Z',
+    run: { sha: 'a3f9e1c', date: '2026-10-19T10:00:00Z', level: 'full' },
     pluginVersion: '0.1.0',
     ...overrides,
   };
@@ -39,7 +37,7 @@ test('commitState: writes state.json with the new last_run', () => {
     assert.deepEqual(state, {
       version: 1,
       plugin_version: '0.1.0',
-      last_run: { sha: 'a3f9e1c', date: '2026-10-19T10:00:00Z', level: 'full' },
+      last_run: params().run,
     });
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -87,6 +85,45 @@ test('commitState: leaves an existing state.json untouched when it fails before 
 
     assert.throws(() => commitState(dir, params()));
     assert.equal(readFileSync(join(dir, '.pitstop/state.json'), 'utf8'), oldState);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('commitState: writes each registry record under .pitstop/findings/<id>.json', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    const registry = [{ id: 'f_abc12345', status: 'open', title: 'x', last_seen: params().run }];
+    commitState(dir, params({ registry }));
+
+    const written = JSON.parse(readFileSync(join(dir, '.pitstop/findings/f_abc12345.json'), 'utf8'));
+    assert.deepEqual(written, registry[0]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('commitState: skips a registry record not touched this run', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    const registry = [{ id: 'f_old', status: 'open', title: 'x', last_seen: { sha: 'older-sha' } }];
+    commitState(dir, params({ registry }));
+
+    assert.equal(existsSync(join(dir, '.pitstop/findings/f_old.json')), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('commitState: writes no findings when registry is omitted', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    commitState(dir, params());
+    assert.equal(existsSync(join(dir, '.pitstop/findings')), true);
+    assert.deepEqual(readdirSync(join(dir, '.pitstop/findings')), []);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

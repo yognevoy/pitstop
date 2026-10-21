@@ -2,30 +2,39 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { git } from './lib/git.js';
 import { report } from './lib/report.js';
+import { read, store } from './lib/registry.js';
 
 const REPORT_TOP_K = 5;
 
 /**
- * Writes the report and the new state.json atomically. 
+ * Writes the report, the new state.json, and the registry atomically.
  * Called only after every earlier step has already succeeded.
  */
-export function commitState(dir, { report: reportText, sha, level, generatedAt, pluginVersion }) {
+export function commitState(dir, { report: reportText, run, pluginVersion, registry = [] }) {
   const pitstopDir = join(dir, '.pitstop');
-  const reportPath = join(pitstopDir, 'reports', `${generatedAt.slice(0, 10)}.md`);
+  const reportPath = join(pitstopDir, 'reports', `${run.date.slice(0, 10)}.md`);
   const statePath = join(pitstopDir, 'state.json');
   const gitignorePath = join(pitstopDir, '.gitignore');
+  const findingsDir = join(pitstopDir, 'findings');
 
   mkdirSync(dirname(reportPath), { recursive: true });
+  mkdirSync(findingsDir, { recursive: true });
 
   const state = {
     version: 1,
     plugin_version: pluginVersion,
-    last_run: { sha, date: generatedAt, level },
+    last_run: run,
   };
 
   writeAtomic(reportPath, reportText);
   writeAtomic(statePath, JSON.stringify(state, null, 2));
   writeAtomic(gitignorePath, 'run/\n');
+
+  for (const record of registry) {
+    if (record.last_seen.sha === run.sha) {
+      writeAtomic(join(findingsDir, `${record.id}.json`), JSON.stringify(record, null, 2));
+    }
+  }
 
   return { reportPath, statePath };
 }
@@ -51,14 +60,18 @@ function main() {
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
 
   const reportText = report(template, scope, findings, REPORT_TOP_K);
-  const sha = git(dir, ['rev-parse', 'HEAD']).trim();
+  const run = {
+    sha: git(dir, ['rev-parse', 'HEAD']).trim(),
+    date: scope.generated_at,
+    level: scope.level,
+  };
+  const registry = store(read(dir), findings, run);
 
   const { reportPath, statePath } = commitState(dir, {
     report: reportText,
-    sha,
-    level: scope.level,
-    generatedAt: scope.generated_at,
+    run,
     pluginVersion: pkg.version,
+    registry,
   });
 
   console.log(`Wrote ${reportPath} and updated ${statePath}.`);
