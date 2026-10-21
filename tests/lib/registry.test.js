@@ -142,6 +142,27 @@ test('store: a resurfacing wontfix finding stays wontfix, not a new open entry',
   assert.equal(result[0].seen_count, 2);
 });
 
+test('store: a reappearing fixed finding reopens, since it regressed', () => {
+  const opened = store([], [finding()], RUN_1);
+  const fixed = [{ ...opened[0], status: 'fixed' }];
+
+  const result = store(fixed, [finding()], RUN_2);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].status, 'open');
+  assert.equal(result[0].seen_count, 2);
+  assert.equal(result[0].history.at(-1).event, 'reopened');
+});
+
+test('store: a fixed finding not seen again stays fixed', () => {
+  const opened = store([], [finding()], RUN_1);
+  const fixed = [{ ...opened[0], status: 'fixed' }];
+
+  const result = store(fixed, [], RUN_2);
+
+  assert.deepEqual(result, fixed);
+});
+
 const isWontfix = (record) => record.status === 'wontfix';
 
 test('scoped: groups a matching record under each of its in-scope anchor files', () => {
@@ -208,6 +229,27 @@ test('setStatus: moving away from wontfix clears status_reason', () => {
 
   assert.equal(result[0].status, 'open');
   assert.equal(result[0].status_reason, null);
+});
+
+test('setStatus: wontfix to fixed clears status_reason', () => {
+  const opened = store([], [finding()], RUN_1);
+  const wontfixed = setStatus(opened, opened[0].id, 'wontfix', { reason: 'intentional', today: TODAY });
+
+  const result = setStatus(wontfixed, wontfixed[0].id, 'fixed', { today: TODAY });
+
+  assert.equal(result[0].status, 'fixed');
+  assert.equal(result[0].status_reason, null);
+});
+
+test('setStatus: fixed to wontfix still requires a reason', () => {
+  const opened = store([], [finding()], RUN_1);
+  const fixed = setStatus(opened, opened[0].id, 'fixed', { today: TODAY });
+
+  assert.throws(() => setStatus(fixed, fixed[0].id, 'wontfix', { today: TODAY }));
+
+  const result = setStatus(fixed, fixed[0].id, 'wontfix', { reason: 'intentional', today: TODAY });
+  assert.equal(result[0].status, 'wontfix');
+  assert.equal(result[0].status_reason, 'intentional');
 });
 
 test('setStatus: rejects an unknown status', () => {

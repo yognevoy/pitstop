@@ -25,7 +25,14 @@ export function store(existing, findings, run) {
     if (record) {
       record.last_seen = { date: run.date, sha: run.sha };
       record.seen_count += 1;
-      record.history = [...record.history, { date: run.date, event: 'seen' }];
+
+      if (record.status === 'fixed') {
+        record.status = 'open';
+        record.history = [...record.history, { date: run.date, event: 'reopened' }];
+      } else {
+        record.history = [...record.history, { date: run.date, event: 'seen' }];
+      }
+
       continue;
     }
 
