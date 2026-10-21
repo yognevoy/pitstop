@@ -31,7 +31,7 @@ Each element is one finding with exactly these fields:
 - `severity`: see scale below.
 - `agent`: always the literal string `"simplifier"`.
 - `title`: one sentence naming the problem and where it is.
-- `anchors`: array of `{ "file": "<path>", "symbols": ["<name>", ...] }`. At least one anchor, at least one symbol per anchor. `symbols` are function, method, class, or variable names that actually appear in that file, not line descriptions.
+- `anchors`: array of `{ "file": "<path>", "symbols": ["<name>", ...] }`. One anchor per file actually involved in the problem itself, not every file you read along the way to confirm it. `symbols` are function, method, class, or variable names that actually appear in that file, not line descriptions; list the smallest set that identifies the problem in that file — usually one name, and only add more if a single name would not let a reader find the problem. Do not list every related name you noticed nearby.
 - `source`: array of `{ "file": "<path>", "line": <number>, "snippet": "<source line or short excerpt>" }`. At least one entry, and the snippet must be a real line from the file at that line number.
 - `what`: what the code does now, in plain terms.
 - `problem`: what is wrong with it.
