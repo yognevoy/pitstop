@@ -45,6 +45,29 @@ export function store(existing, findings, run) {
   return result;
 }
 
+// Groups records matching isMatch by anchor file, for files in this run's scope.
+export function scoped(records, isMatch, scopeFiles) {
+  const scopeSet = new Set(scopeFiles);
+  const byFile = {};
+
+  for (const record of records) {
+    if (!isMatch(record)) {
+      continue;
+    }
+
+    for (const anchor of record.anchors) {
+      if (!scopeSet.has(anchor.file)) {
+        continue;
+      }
+
+      byFile[anchor.file] ??= [];
+      byFile[anchor.file].push({ id: record.id, title: record.title });
+    }
+  }
+
+  return byFile;
+}
+
 function recordId(category, anchors) {
   const files = anchors.map((anchor) => anchor.file).sort();
   const hash = createHash('sha1').update(`${category}\n${files.join('|')}`).digest('hex').slice(0, 8);

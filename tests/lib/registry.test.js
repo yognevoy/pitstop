@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { store } from '../../scripts/lib/registry.js';
+import { scoped, store } from '../../scripts/lib/registry.js';
 
 const RUN_1 = { date: '2026-10-19T10:00:00Z', sha: 'a3f9e1c' };
 const RUN_2 = { date: '2026-10-26T10:00:00Z', sha: 'b7c2d4e' };
@@ -130,4 +130,46 @@ test('store: does not mutate the existing records passed in', () => {
   store(opened, [finding()], RUN_2);
 
   assert.deepEqual(opened, snapshot);
+});
+
+test('store: a resurfacing wontfix finding stays wontfix, not a new open entry', () => {
+  const opened = store([], [finding()], RUN_1);
+  const dismissed = [{ ...opened[0], status: 'wontfix', status_reason: 'intentional' }];
+
+  const result = store(dismissed, [finding()], RUN_2);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].status, 'wontfix');
+  assert.equal(result[0].seen_count, 2);
+});
+
+const isWontfix = (record) => record.status === 'wontfix';
+
+test('scoped: groups a matching record under each of its in-scope anchor files', () => {
+  const opened = store([], [finding()], RUN_1);
+  const dismissed = [{ ...opened[0], status: 'wontfix', status_reason: 'intentional' }];
+
+  const result = scoped(dismissed, isWontfix, ['services/billing/tax.ts', 'services/invoices/total.ts']);
+
+  assert.deepEqual(result, {
+    'services/billing/tax.ts': [{ id: dismissed[0].id, title: dismissed[0].title }],
+    'services/invoices/total.ts': [{ id: dismissed[0].id, title: dismissed[0].title }],
+  });
+});
+
+test('scoped: omits a matching record\'s anchor files that are not in scope', () => {
+  const opened = store([], [finding()], RUN_1);
+  const dismissed = [{ ...opened[0], status: 'wontfix', status_reason: 'intentional' }];
+
+  const result = scoped(dismissed, isWontfix, ['unrelated.js']);
+
+  assert.deepEqual(result, {});
+});
+
+test('scoped: omits a record the predicate rejects', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  const result = scoped(opened, isWontfix, ['services/billing/tax.ts']);
+
+  assert.deepEqual(result, {});
 });
