@@ -21,6 +21,8 @@ Do not report correctness bugs, security issues, or module-boundary/architecture
 
 Read `.pitstop/run/scope.json` in the current working directory. Its `files` array lists the paths in scope for this run, each with commit and change-line counts from recent history. Read those files. You may also read or grep other files in the repository to confirm whether something is actually duplicated or reused elsewhere, but every finding must anchor to at least one file from the scope list.
 
+`.pitstop/run/wontfix.json` maps a file path to the findings the user has already triaged as `wontfix` that touch it. For a file you're examining, check this map for its path; do not re-report something that is clearly the same problem as one of these — it is already known and intentionally not being tracked right now.
+
 ## Output
 
 Write a JSON array to `.pitstop/run/raw/simplifier.json` in the current working directory. Nothing else in the file: no markdown fences, no prose before or after. If you find nothing, write `[]`.
