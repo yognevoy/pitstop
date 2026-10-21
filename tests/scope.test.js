@@ -102,3 +102,4 @@ test('scope: an empty range (no commits since last_run.sha) yields no files, not
     repo.cleanup();
   }
 });
+

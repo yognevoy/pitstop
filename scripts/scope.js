@@ -6,6 +6,7 @@ import { git } from './lib/git.js';
 import { churn } from './lib/churn.js';
 import { filterScope, parsePitstopIgnore } from './lib/ignore.js';
 import { rankChurn } from './lib/rank-churn.js';
+import { read, scoped } from './lib/registry.js';
 
 const MAX_FILES = { quick: 15, full: 40, deep: 80 };
 
@@ -25,13 +26,13 @@ export function scope(dir, level) {
     range = [`--since=${result.since}`, 'HEAD'];
   }
 
-  const files = churn(dir, range);
+  const churned = churn(dir, range);
   const extraPatterns = readPitstopIgnore(dir);
-  const kept = filterScope(dir, Object.keys(files), extraPatterns);
+  const kept = filterScope(dir, Object.keys(churned), extraPatterns);
 
   const keptChurn = {};
   for (const path of kept) {
-    keptChurn[path] = files[path];
+    keptChurn[path] = churned[path];
   }
 
   return {
@@ -73,11 +74,18 @@ function main() {
 
   const dir = git(process.cwd(), ['rev-parse', '--show-toplevel']).trim();
   const outPath = join(dir, '.pitstop/run/scope.json');
+  const wontfixPath = join(dir, '.pitstop/run/wontfix.json');
 
   const result = scope(dir, values.level);
+  const wontfixByFile = scoped(
+    read(dir),
+    (record) => record.status === 'wontfix',
+    result.files.map((file) => file.path),
+  );
 
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(result, null, 2));
+  writeFileSync(wontfixPath, JSON.stringify(wontfixByFile, null, 2));
   console.log(`Wrote ${result.files.length} file(s) to ${outPath} (${result.base.method}: ${result.base.reason})`);
 }
 
