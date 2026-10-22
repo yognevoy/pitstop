@@ -40,11 +40,16 @@ Optional. Create `.pitstop/config.json` at the root of your project to override 
     "quick": { "max_files": 15 },
     "full": { "max_files": 40 },
     "deep": { "max_files": 80 }
+  },
+  "weights": {
+    "severity": { "must": 3, "should": 2, "nice": 1 },
+    "effort": { "S": 1, "M": 1.5, "L": 2.5 },
+    "recurring_bonus": 1.5
   }
 }
 ```
 
-You can set just the fields you want to change; everything else keeps its default.
+You can set just the fields you want to change; everything else keeps its default. `weights` controls how findings are scored and ranked in the report: `severity`/`effort` weight the score formula, and `recurring_bonus` boosts a finding once it has reappeared across 3+ runs.
 
 ## License
 
