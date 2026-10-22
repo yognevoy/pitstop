@@ -24,7 +24,9 @@
         "overcomplexity",
         "correctness",
         "module-boundary",
-        "scattered-behavior"
+        "scattered-behavior",
+        "cyclic-dependency",
+        "god-module"
       ]
     },
     "severity": { "type": "string", "enum": ["must", "should", "nice"] },
