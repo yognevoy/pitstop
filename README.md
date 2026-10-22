@@ -49,7 +49,20 @@ Optional. Create `.pitstop/config.json` at the root of your project to override 
 }
 ```
 
-You can set just the fields you want to change; everything else keeps its default. `weights` controls how findings are scored and ranked in the report: `severity`/`effort` weight the score formula, and `recurring_bonus` boosts a finding once it has reappeared across 3+ runs.
+You can set just the fields you want to change; everything else keeps its default.
+
+## Scoring
+
+Findings are ranked by a score:
+
+```
+score = severity_weight × hotspot × confidence / effort_weight × recurring_bonus
+```
+
+- `severity_weight` / `effort_weight`: looked up from `weights.severity`/`weights.effort` by the finding's `severity` (`must`/`should`/`nice`) and `effort` (`S`/`M`/`L`).
+- `hotspot`: the finding's anchor file's commit count this run, normalized 0-1 against the busiest file in scope (max across anchors for a multi-file finding). Findings on frequently-changed files rank higher.
+- `confidence`: the agent's own 0-1 confidence in the finding.
+- `recurring_bonus`: `weights.recurring_bonus` once a finding has reappeared for 3+ runs, otherwise 1.
 
 ## License
 
