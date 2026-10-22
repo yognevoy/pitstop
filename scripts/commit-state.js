@@ -20,11 +20,7 @@ export function commitState(dir, { report: reportText, run, pluginVersion, regis
   mkdirSync(dirname(reportPath), { recursive: true });
   mkdirSync(findingsDir, { recursive: true });
 
-  const state = {
-    version: 1,
-    plugin_version: pluginVersion,
-    last_run: run,
-  };
+  const state = { version: 1, plugin_version: pluginVersion, last_run: run };
 
   writeAtomic(reportPath, reportText);
   writeAtomic(statePath, JSON.stringify(state, null, 2));
@@ -43,25 +39,30 @@ function main() {
   const dir = git(process.cwd(), ['rev-parse', '--show-toplevel']).trim();
 
   const scopePath = join(dir, '.pitstop/run/scope.json');
-  const findingsPath = join(dir, '.pitstop/run/validated.json');
+  const scoredPath = join(dir, '.pitstop/run/scored.json');
   const templatePath = new URL('../templates/report.md', import.meta.url);
   const pkgPath = new URL('../package.json', import.meta.url);
   const configSchemaPath = new URL('../schemas/config.schema.json', import.meta.url);
 
   const scope = JSON.parse(readFileSync(scopePath, 'utf8'));
-  const findings = JSON.parse(readFileSync(findingsPath, 'utf8'));
+  const scored = JSON.parse(readFileSync(scoredPath, 'utf8'));
   const template = readFileSync(templatePath, 'utf8');
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
   const configSchema = JSON.parse(readFileSync(configSchemaPath));
 
   const config = loadConfig(dir, configSchema);
-  const reportText = report(template, scope, findings, config.report_top_k);
+  const reportText = report(template, scope, scored, config.report_top_k);
   const run = {
     sha: git(dir, ['rev-parse', 'HEAD']).trim(),
     date: scope.generated_at,
     level: scope.level,
   };
-  const registry = store(read(dir), findings, run);
+
+  // Registry records keep the content fields only: score/score_detail are
+  // per-run (hotspot and seen_count shift between runs), not part of the
+  // persisted finding.
+  const contentFindings = scored.map(({ score, score_detail, ...finding }) => finding);
+  const registry = store(read(dir), contentFindings, run);
 
   const { reportPath, statePath } = commitState(dir, {
     report: reportText,
