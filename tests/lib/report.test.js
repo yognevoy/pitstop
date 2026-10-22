@@ -27,6 +27,7 @@ function finding(overrides = {}) {
     if_skipped: 'The two copies can drift out of sync.',
     effort: 'S',
     confidence: 0.8,
+    score: 1.6,
     ...overrides,
   };
 }
@@ -66,9 +67,9 @@ test('report: says so when there are no findings', () => {
 
 test('report: only shows the top K findings and reports the rest as cut, pluralized', () => {
   const findings = [
-    finding({ title: 'A', severity: 'must' }),
-    finding({ title: 'B', severity: 'should' }),
-    finding({ title: 'C', severity: 'nice' }),
+    finding({ title: 'A', score: 3 }),
+    finding({ title: 'B', score: 2 }),
+    finding({ title: 'C', score: 1 }),
   ];
 
   const text = report(template, scope(), findings, 1);
@@ -80,7 +81,7 @@ test('report: only shows the top K findings and reports the rest as cut, plurali
 });
 
 test('report: uses singular wording for exactly one finding below the cut', () => {
-  const findings = [finding({ title: 'A', severity: 'must' }), finding({ title: 'B', severity: 'should' })];
+  const findings = [finding({ title: 'A', score: 2 }), finding({ title: 'B', score: 1 })];
   const text = report(template, scope(), findings, 1);
 
   assert.match(text, /1 more finding below the cut\./);
