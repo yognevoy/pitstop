@@ -1,11 +1,10 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { writeAtomic } from './lib/atomic-write.js';
+import { loadConfig } from './lib/config.js';
 import { git } from './lib/git.js';
 import { report } from './lib/report.js';
 import { read, store } from './lib/registry.js';
-
-const REPORT_TOP_K = 5;
 
 /**
  * Writes the report, the new state.json, and the registry atomically.
@@ -47,13 +46,16 @@ function main() {
   const findingsPath = join(dir, '.pitstop/run/validated.json');
   const templatePath = new URL('../templates/report.md', import.meta.url);
   const pkgPath = new URL('../package.json', import.meta.url);
+  const configSchemaPath = new URL('../schemas/config.schema.json', import.meta.url);
 
   const scope = JSON.parse(readFileSync(scopePath, 'utf8'));
   const findings = JSON.parse(readFileSync(findingsPath, 'utf8'));
   const template = readFileSync(templatePath, 'utf8');
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  const configSchema = JSON.parse(readFileSync(configSchemaPath));
 
-  const reportText = report(template, scope, findings, REPORT_TOP_K);
+  const config = loadConfig(dir, configSchema);
+  const reportText = report(template, scope, findings, config.report_top_k);
   const run = {
     sha: git(dir, ['rev-parse', 'HEAD']).trim(),
     date: scope.generated_at,

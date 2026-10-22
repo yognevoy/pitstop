@@ -2,21 +2,20 @@ import { parseArgs } from 'node:util';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { base } from './lib/base.js';
+import { DEFAULT_CONFIG, loadConfig } from './lib/config.js';
 import { git } from './lib/git.js';
 import { churn } from './lib/churn.js';
 import { filterScope, parsePitstopIgnore } from './lib/ignore.js';
 import { rankChurn } from './lib/rank-churn.js';
 import { read, scoped } from './lib/registry.js';
 
-const MAX_FILES = { quick: 15, full: 40, deep: 80 };
-
-export function scope(dir, level) {
-  if (!(level in MAX_FILES)) {
-    throw new Error(`Unknown level "${level}". Expected one of: ${Object.keys(MAX_FILES).join(', ')}.`);
+export function scope(dir, level, config = DEFAULT_CONFIG) {
+  if (!(level in config.levels)) {
+    throw new Error(`Unknown level "${level}". Expected one of: ${Object.keys(config.levels).join(', ')}.`);
   }
 
   const sha = lastRunSha(dir);
-  const result = base(dir, sha);
+  const result = base(dir, sha, config.fallback_since);
 
   let range;
 
@@ -40,7 +39,7 @@ export function scope(dir, level) {
     level,
     base: result,
     generated_at: new Date().toISOString(),
-    files: rankChurn(keptChurn, MAX_FILES[level]),
+    files: rankChurn(keptChurn, config.levels[level].max_files),
   };
 }
 
@@ -75,8 +74,10 @@ function main() {
   const dir = git(process.cwd(), ['rev-parse', '--show-toplevel']).trim();
   const outPath = join(dir, '.pitstop/run/scope.json');
   const baselinePath = join(dir, '.pitstop/run/baseline.json');
+  const configSchema = JSON.parse(readFileSync(new URL('../schemas/config.schema.json', import.meta.url)));
 
-  const result = scope(dir, values.level);
+  const config = loadConfig(dir, configSchema);
+  const result = scope(dir, values.level, config);
   const baselineByFile = scoped(
     read(dir),
     (record) => record.status === 'wontfix',

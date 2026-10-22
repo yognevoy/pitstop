@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "fallback_since": { "type": "string" },
+    "report_top_k": { "type": "number", "minimum": 1 },
+    "levels": {
+      "type": "object",
+      "properties": {
+        "quick": {
+          "type": "object",
+          "properties": { "max_files": { "type": "number", "minimum": 1 } }
+        },
+        "full": {
+          "type": "object",
+          "properties": { "max_files": { "type": "number", "minimum": 1 } }
+        },
+        "deep": {
+          "type": "object",
+          "properties": { "max_files": { "type": "number", "minimum": 1 } }
+        }
+      }
+    }
+  }
+}

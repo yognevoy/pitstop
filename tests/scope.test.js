@@ -88,6 +88,26 @@ test('scope: drops built-in-ignored and .pitstopignore-matched files', () => {
   }
 });
 
+test('scope: a custom config overrides max_files and fallback_since', () => {
+  const repo = createFixtureRepo();
+  try {
+    repo.commit({ 'a.js': 'one' }, { date: '2026-10-18T00:00:00Z' });
+    repo.commit({ 'a.js': 'two', 'b.js': 'x', 'c.js': 'y' }, { date: '2026-10-19T00:00:00Z' });
+
+    const config = {
+      fallback_since: '1 year ago',
+      report_top_k: 5,
+      levels: { quick: { max_files: 15 }, full: { max_files: 1 }, deep: { max_files: 80 } },
+    };
+    const result = scope(repo.dir, 'full', config);
+
+    assert.equal(result.base.since, '1 year ago');
+    assert.equal(result.files.length, 1);
+  } finally {
+    repo.cleanup();
+  }
+});
+
 test('scope: an empty range (no commits since last_run.sha) yields no files, not an error', () => {
   const repo = createFixtureRepo();
   try {
