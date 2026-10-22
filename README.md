@@ -28,6 +28,24 @@ To try a local checkout for a single session without installing it, start Claude
 claude --plugin-dir /path/to/pitstop
 ```
 
+## Configuration
+
+Optional. Create `.pitstop/config.json` at the root of your project to override any of these defaults:
+
+```json
+{
+  "fallback_since": "4 weeks ago",
+  "report_top_k": 5,
+  "levels": {
+    "quick": { "max_files": 15 },
+    "full": { "max_files": 40 },
+    "deep": { "max_files": 80 }
+  }
+}
+```
+
+You can set just the fields you want to change; everything else keeps its default.
+
 ## License
 
 [MIT](LICENSE)
