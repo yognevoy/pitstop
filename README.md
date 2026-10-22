@@ -64,6 +64,12 @@ score = severity_weight × hotspot × confidence / effort_weight × recurring_bo
 - `confidence`: the agent's own 0-1 confidence in the finding.
 - `recurring_bonus`: `weights.recurring_bonus` once a finding has reappeared for 3+ runs, otherwise 1.
 
+## CI
+
+Copy [`examples/github-actions/pitstop.yml`](examples/github-actions/pitstop.yml) into `.github/workflows/` to run a pit stop on a schedule (weekly by default) instead of by hand. It needs an `ANTHROPIC_API_KEY` repository secret.
+
+It never pushes straight to your default branch: it opens a PR with the report as the PR body and the updated `.pitstop/` (state, registry, metrics) as the diff, so the registry only advances once you merge it.
+
 ## License
 
 [MIT](LICENSE)
