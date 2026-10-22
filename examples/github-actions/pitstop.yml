@@ -1,0 +1,55 @@
+# Copy this into .github/workflows/ of the project you want pitstop to run
+# against periodically. Requires an ANTHROPIC_API_KEY secret on the repo.
+name: pitstop
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pitstop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          plugin_marketplaces: https://github.com/yognevoy/pitstop
+          plugins: pitstop@pitstop
+          prompt: /pitstop:pitstop full
+          claude_args: --allowedTools "Bash(node *),Read,Write,Grep,Glob"
+
+      - name: Open a PR with the updated .pitstop/ state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! git status --porcelain .pitstop | grep -q .; then
+            echo "Nothing changed under .pitstop/; skipping PR."
+            exit 0
+          fi
+
+          date="$(date -u +%F)"
+          branch="pitstop/$date"
+          report="$(ls -t .pitstop/reports/*.md | head -n1)"
+
+          git checkout -b "$branch"
+          git add .pitstop
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "chore(pitstop): report $date"
+          # shortcut: re-running on the same day fails (branch/PR already exists); fine for a weekly cron, upgrade with a run-number suffix if triggered more than once a day.
+          git push origin "$branch"
+          gh pr create --title "pitstop: $date" --body-file "$report" --head "$branch"
