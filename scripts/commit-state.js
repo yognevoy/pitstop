@@ -1,16 +1,20 @@
-import { mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { writeAtomic } from './lib/atomic-write.js';
 import { loadConfig } from './lib/config.js';
+import { detectDuplicates } from './lib/duplication.js';
 import { git } from './lib/git.js';
+import { metrics } from './lib/metrics.js';
 import { report } from './lib/report.js';
 import { read, store } from './lib/registry.js';
+import { trends } from './lib/trends.js';
 
 /**
- * Writes the report, the new state.json, and the registry atomically.
- * Called only after every earlier step has already succeeded.
+ * Writes the report, the new state.json, the registry, the metrics
+ * snapshot, and the trends data atomically. Called only after every earlier
+ * step has already succeeded.
  */
-export function commitState(dir, { report: reportText, run, pluginVersion, registry = [] }) {
+export function commitState(dir, { report: reportText, run, pluginVersion, registry = [], metrics: metricsSnapshot = null, trends: trendsData = null }) {
   const pitstopDir = join(dir, '.pitstop');
   const reportPath = join(pitstopDir, 'reports', `${run.date.slice(0, 10)}.md`);
   const statePath = join(pitstopDir, 'state.json');
@@ -32,7 +36,22 @@ export function commitState(dir, { report: reportText, run, pluginVersion, regis
     }
   }
 
-  return { reportPath, statePath };
+  let metricsPath = null;
+
+  if (metricsSnapshot) {
+    const metricsDir = join(pitstopDir, 'metrics');
+    mkdirSync(metricsDir, { recursive: true });
+    metricsPath = join(metricsDir, `${run.date.slice(0, 10)}.json`);
+    writeAtomic(metricsPath, JSON.stringify(metricsSnapshot, null, 2));
+  }
+
+  if (trendsData) {
+    const runDir = join(pitstopDir, 'run');
+    mkdirSync(runDir, { recursive: true });
+    writeAtomic(join(runDir, 'trends.json'), JSON.stringify(trendsData, null, 2));
+  }
+
+  return { reportPath, statePath, metricsPath };
 }
 
 function main() {
@@ -64,14 +83,52 @@ function main() {
   const contentFindings = scored.map(({ score, score_detail, ...finding }) => finding);
   const registry = store(read(dir), contentFindings, run);
 
+  const previousRunDate = readPreviousRunDate(dir);
+  const duplicatesByFile = detectDuplicates(dir, scope.files.map((file) => file.path));
+  const metricsSnapshot = {
+    version: 1,
+    sha: run.sha,
+    date: run.date,
+    files: metrics(dir, scope.files, registry, duplicatesByFile),
+    totals: { open_findings: registry.filter((record) => record.status === 'open').length },
+  };
+  const history = [...readMetricsHistory(dir), metricsSnapshot];
+  const trendsData = trends(history, registry, previousRunDate);
+
   const { reportPath, statePath } = commitState(dir, {
     report: reportText,
     run,
     pluginVersion: pkg.version,
     registry,
+    metrics: metricsSnapshot,
+    trends: trendsData,
   });
 
   console.log(`Wrote ${reportPath} and updated ${statePath}.`);
+}
+
+function readPreviousRunDate(dir) {
+  const statePath = join(dir, '.pitstop/state.json');
+
+  if (!existsSync(statePath)) {
+    return null;
+  }
+
+  const state = JSON.parse(readFileSync(statePath, 'utf8'));
+  return state.last_run?.date ?? null;
+}
+
+function readMetricsHistory(dir) {
+  const metricsDir = join(dir, '.pitstop/metrics');
+
+  if (!existsSync(metricsDir)) {
+    return [];
+  }
+
+  return readdirSync(metricsDir)
+    .filter((name) => name.endsWith('.json'))
+    .sort()
+    .map((name) => JSON.parse(readFileSync(join(metricsDir, name), 'utf8')));
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {

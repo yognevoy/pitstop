@@ -142,3 +142,53 @@ test('commitState: leaves no .tmp files behind', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('commitState: writes the metrics snapshot under .pitstop/metrics/<date>.json when given', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    const snapshot = { version: 1, sha: params().run.sha, date: params().run.date, files: [], totals: { open_findings: 0 } };
+    const { metricsPath } = commitState(dir, params({ metrics: snapshot }));
+
+    assert.equal(metricsPath, join(dir, '.pitstop/metrics/2026-10-19.json'));
+    assert.deepEqual(JSON.parse(readFileSync(metricsPath, 'utf8')), snapshot);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('commitState: writes no metrics snapshot when omitted', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    const { metricsPath } = commitState(dir, params());
+    assert.equal(metricsPath, null);
+    assert.equal(existsSync(join(dir, '.pitstop/metrics')), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('commitState: writes trends data to .pitstop/run/trends.json when given', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    const trendsData = [{ type: 'burn_down', opened: 1, closed: 0, open_total: 1 }];
+    commitState(dir, params({ trends: trendsData }));
+
+    assert.deepEqual(JSON.parse(readFileSync(join(dir, '.pitstop/run/trends.json'), 'utf8')), trendsData);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('commitState: writes no trends.json when omitted', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    commitState(dir, params());
+    assert.equal(existsSync(join(dir, '.pitstop/run/trends.json')), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
