@@ -105,7 +105,7 @@ export function setStatus(records, id, status, { reason, today }) {
   });
 }
 
-function recordId(category, anchors) {
+export function recordId(category, anchors) {
   const files = anchors.map((anchor) => anchor.file).sort();
   const hash = createHash('sha1').update(`${category}\n${files.join('|')}`).digest('hex').slice(0, 8);
 
