@@ -52,6 +52,37 @@ test('loadConfig: overrides one level\'s max_files without touching the others',
   }
 });
 
+test('loadConfig: overrides one severity weight without touching the others or effort/recurring_bonus', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-config-'));
+
+  try {
+    writeConfig(dir, { weights: { severity: { must: 5 } } });
+    const config = loadConfig(dir, SCHEMA);
+
+    assert.equal(config.weights.severity.must, 5);
+    assert.equal(config.weights.severity.should, DEFAULT_CONFIG.weights.severity.should);
+    assert.equal(config.weights.severity.nice, DEFAULT_CONFIG.weights.severity.nice);
+    assert.deepEqual(config.weights.effort, DEFAULT_CONFIG.weights.effort);
+    assert.equal(config.weights.recurring_bonus, DEFAULT_CONFIG.weights.recurring_bonus);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadConfig: overrides recurring_bonus on its own', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-config-'));
+
+  try {
+    writeConfig(dir, { weights: { recurring_bonus: 2 } });
+    const config = loadConfig(dir, SCHEMA);
+
+    assert.equal(config.weights.recurring_bonus, 2);
+    assert.deepEqual(config.weights.severity, DEFAULT_CONFIG.weights.severity);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('loadConfig: throws with the schema error when config.json is invalid', () => {
   const dir = mkdtempSync(join(tmpdir(), 'pitstop-config-'));
 

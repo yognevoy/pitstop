@@ -10,6 +10,11 @@ export const DEFAULT_CONFIG = {
     full: { max_files: 40 },
     deep: { max_files: 80 },
   },
+  weights: {
+    severity: { must: 3, should: 2, nice: 1 },
+    effort: { S: 1, M: 1.5, L: 2.5 },
+    recurring_bonus: 1.5,
+  },
 };
 
 /**
@@ -38,6 +43,7 @@ function mergeConfig(userConfig) {
     fallback_since: userConfig.fallback_since ?? DEFAULT_CONFIG.fallback_since,
     report_top_k: userConfig.report_top_k ?? DEFAULT_CONFIG.report_top_k,
     levels: mergeLevels(userConfig.levels ?? {}),
+    weights: mergeWeights(userConfig.weights ?? {}),
   };
 }
 
@@ -46,6 +52,24 @@ function mergeLevels(userLevels) {
 
   for (const [level, defaultLevel] of Object.entries(DEFAULT_CONFIG.levels)) {
     merged[level] = { max_files: userLevels[level]?.max_files ?? defaultLevel.max_files };
+  }
+
+  return merged;
+}
+
+function mergeWeights(userWeights) {
+  return {
+    severity: mergeScale(userWeights.severity, DEFAULT_CONFIG.weights.severity),
+    effort: mergeScale(userWeights.effort, DEFAULT_CONFIG.weights.effort),
+    recurring_bonus: userWeights.recurring_bonus ?? DEFAULT_CONFIG.weights.recurring_bonus,
+  };
+}
+
+function mergeScale(userScale = {}, defaultScale) {
+  const merged = {};
+
+  for (const [key, defaultValue] of Object.entries(defaultScale)) {
+    merged[key] = userScale[key] ?? defaultValue;
   }
 
   return merged;

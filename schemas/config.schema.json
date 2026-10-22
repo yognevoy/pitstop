@@ -19,6 +19,28 @@
           "properties": { "max_files": { "type": "number", "minimum": 1 } }
         }
       }
+    },
+    "weights": {
+      "type": "object",
+      "properties": {
+        "severity": {
+          "type": "object",
+          "properties": {
+            "must": { "type": "number" },
+            "should": { "type": "number" },
+            "nice": { "type": "number" }
+          }
+        },
+        "effort": {
+          "type": "object",
+          "properties": {
+            "S": { "type": "number" },
+            "M": { "type": "number" },
+            "L": { "type": "number" }
+          }
+        },
+        "recurring_bonus": { "type": "number" }
+      }
     }
   }
 }
