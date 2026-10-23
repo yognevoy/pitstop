@@ -9,11 +9,15 @@
   <img alt="license" src="https://img.shields.io/badge/license-MIT-111111">
 </p>
 
-pitstop is a Claude Code plugin for periodic codebase maintenance: run it weekly, after a sprint, or monthly. It looks at what changed since the last run and surfaces the cumulative drift (duplication, needless abstractions, drifting module boundaries) that per-change reviews miss.
+pitstop is the crew chief for your codebase. It doesn't watch every lap: it waits for the scheduled stop (weekly, after a sprint, or monthly) and sends the car back out with the real problems fixed.
 
-## Install (local development)
+## How it works
 
-Clone the repo, then from inside a Claude Code session in any project:
+It picks hot files straight from git history (how often they change, how big the change) and reviews them for the drift a normal review misses: duplication, abstractions nobody needed, module boundaries that quietly blurred. The output is a short report.
+
+## Install
+
+**Claude Code**, from inside a session in any project:
 
 ```
 /plugin marketplace add /path/to/pitstop
@@ -22,11 +26,16 @@ Clone the repo, then from inside a Claude Code session in any project:
 
 Run `/pitstop:pitstop` to confirm it loaded; it won't do anything yet.
 
-To try a local checkout for a single session without installing it, start Claude Code with:
+**Codex, Gemini CLI, OpenCode:** clone the repo, then point the host at it as a local extension/plugin the way it expects (Codex: `.codex-plugin/`; Gemini CLI: `gemini-extension.json`; OpenCode: `.opencode/commands/`). Each runs `/pitstop [quick|full|deep]`.
 
-```bash
-claude --plugin-dir /path/to/pitstop
-```
+**Any other skill-capable agent:** copy [`AGENTS.md`](AGENTS.md) into your project and ask your agent to run it.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `/pitstop:pitstop [quick\|full\|deep]` (Claude Code)<br>`/pitstop [quick\|full\|deep]` (other hosts) | Run a pit stop: scope the changes since the last run, review the hot files, validate and merge the findings, score them, and write `.pitstop/reports/<date>.md`. Defaults to `full`. |
+| `/pitstop:registry` | List open findings, or mark one `wontfix`, `fixed`, or reopen it. Claude Code only for now. |
 
 ## Configuration
 
@@ -69,6 +78,20 @@ score = severity_weight × hotspot × confidence / effort_weight × recurring_bo
 Copy [`examples/github-actions/pitstop.yml`](examples/github-actions/pitstop.yml) into `.github/workflows/` to run a pit stop on a schedule (weekly by default) instead of by hand. It needs an `ANTHROPIC_API_KEY` repository secret.
 
 It never pushes straight to your default branch: it opens a PR with the report as the PR body and the updated `.pitstop/` (state, registry, metrics) as the diff, so the registry only advances once you merge it.
+
+## FAQ
+
+**Does it need a config file?**
+No. `.pitstop/config.json` is optional; every field has a default (see [Configuration](#configuration)).
+
+**Why not just review every diff?**
+A per-change review only sees that one change. Drift accumulates across many changes nobody flagged individually, which is exactly what pitstop's "since the last run" window is built to catch.
+
+**What happens to a finding I don't want fixed?**
+`/pitstop:registry` to mark it `wontfix`, with a reason. It stays dismissed and won't resurface in future reports, even if the same code is touched again.
+
+**Does it run automatically?**
+Not by default. It's invoked explicitly, or scheduled via the [CI](#ci) example. It's deliberately not an always-on mode: it reviews what piled up since the last run, not every change as it happens.
 
 ## License
 
