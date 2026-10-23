@@ -1,0 +1,2 @@
+description = "Run a pit stop: periodic codebase maintenance since the last run"
+prompt = "Read AGENTS.md in this extension's own directory and run the pit stop it describes end to end, using level {{args}} (quick, full, or deep; default full if empty)."
