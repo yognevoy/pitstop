@@ -2,5 +2,27 @@
   "name": "pitstop",
   "version": "0.1.0",
   "description": "Scheduled maintenance for AI codebases. Catches the drift reviews miss and lines it up.",
-  "skills": "./skills/"
+  "author": {
+    "name": "Yaroslav Ognevoy",
+    "url": "https://github.com/yognevoy"
+  },
+  "homepage": "https://github.com/yognevoy/pitstop",
+  "repository": "https://github.com/yognevoy/pitstop",
+  "license": "MIT",
+  "keywords": ["code-review", "maintenance", "technical-debt", "productivity"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "pitstop",
+    "shortDescription": "Periodic codebase maintenance",
+    "longDescription": "Reviews recent changes for drift a normal review misses and writes a short report.",
+    "developerName": "Yaroslav Ognevoy",
+    "category": "Productivity",
+    "capabilities": ["Instructions"],
+    "websiteURL": "https://github.com/yognevoy/pitstop",
+    "defaultPrompt": [
+      "Run a pit stop over this codebase.",
+      "What's drifted since the last pit stop?"
+    ],
+    "brandColor": "#111111"
+  }
 }
