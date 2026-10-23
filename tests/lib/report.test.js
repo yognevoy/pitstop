@@ -61,13 +61,13 @@ test('report: omits a severity with zero findings from the breakdown', () => {
   assert.doesNotMatch(text, /must|nice/);
 });
 
-test('report: groups findings under a Must fix / Should fix / Nice to have heading', () => {
-  const findings = [finding({ title: 'A must', severity: 'must' }), finding({ title: 'A nice', severity: 'nice' })];
+test('report: lists findings in a table sorted by severity', () => {
+  const findings = [finding({ title: 'A nice', severity: 'nice' }), finding({ title: 'A must', severity: 'must' })];
   const text = report(template, scope(), findings, 5);
 
-  assert.match(text, /## Must fix\n\n### 1\. A must/);
-  assert.match(text, /## Nice to have\n\n### 2\. A nice/);
-  assert.doesNotMatch(text, /## Should fix/);
+  assert.match(text, /\| # \| Severity \| Category \| File \| Title \| Effort \|/);
+  assert.match(text, /\| 1 \| must \| duplication \| tax\.js \| A must \| S \|/);
+  assert.match(text, /\| 2 \| nice \| duplication \| tax\.js \| A nice \| S \|/);
 });
 
 test('report: numbers findings continuously across severity groups, in severity order', () => {

@@ -1,7 +1,6 @@
 import { rankFindings } from './rank-findings.js';
 
 const SEVERITIES = ['must', 'should', 'nice'];
-const SEVERITY_HEADINGS = { must: 'Must fix', should: 'Should fix', nice: 'Nice to have' };
 
 /**
  * Fills in the report template with the run's results.
@@ -52,21 +51,25 @@ function renderFindings(findings) {
     return 'No findings this run.';
   }
 
-  let number = 0;
-  const sections = [];
+  const bySeverity = [...findings].sort(
+    (a, b) => SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity),
+  );
 
-  for (const severity of SEVERITIES) {
-    const group = findings.filter((finding) => finding.severity === severity);
+  const table = renderTable(bySeverity);
+  const details = bySeverity.map((finding, index) => renderFinding(finding, index + 1));
 
-    if (group.length === 0) {
-      continue;
-    }
+  return [table, ...details].join('\n\n');
+}
 
-    const items = group.map((finding) => renderFinding(finding, ++number));
-    sections.push(`## ${SEVERITY_HEADINGS[severity]}\n\n${items.join('\n\n')}`);
-  }
+function renderTable(findings) {
+  const header = '| # | Severity | Category | File | Title | Effort |';
+  const divider = '|---|----------|----------|------|-------|--------|';
+  const rows = findings.map((finding, index) => {
+    const files = finding.anchors.map((anchor) => anchor.file).join(', ');
+    return `| ${index + 1} | ${finding.severity} | ${finding.category} | ${files} | ${finding.title} | ${finding.effort} |`;
+  });
 
-  return sections.join('\n\n');
+  return [header, divider, ...rows].join('\n');
 }
 
 function renderFinding(finding, number) {
