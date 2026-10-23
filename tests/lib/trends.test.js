@@ -55,6 +55,21 @@ test('trends: a metric that never decreases and strictly grew over the window is
   assert.deepEqual(monotonic[0].series, [10, 12, 15]);
 });
 
+test('trends: a monotonic series covers the file\'s whole history, not just the detection window', () => {
+  const history = [
+    snapshot([file({ loc: 1 })]),
+    snapshot([file({ loc: 2 })]),
+    snapshot([file({ loc: 10 })]),
+    snapshot([file({ loc: 12 })]),
+    snapshot([file({ loc: 15 })]),
+  ];
+  const result = trends(history, [], null, { monotonicRuns: 3, growthThreshold: 1 });
+  const monotonic = result.filter((item) => item.type === 'monotonic' && item.metric === 'loc');
+
+  assert.equal(monotonic.length, 1);
+  assert.deepEqual(monotonic[0].series, [1, 2, 10, 12, 15]);
+});
+
 test('trends: a flat or decreasing series is not monotonic', () => {
   const history = [
     snapshot([file({ loc: 10 })]),
