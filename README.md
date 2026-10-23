@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="220" alt="pitstop logo">
+</p>
+
 <h1 align="center">pitstop</h1>
 
 <p align="center">
