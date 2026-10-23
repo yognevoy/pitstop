@@ -53,7 +53,6 @@ test('trends: a metric that never decreases and strictly grew over the window is
 
   assert.equal(monotonic.length, 1);
   assert.deepEqual(monotonic[0].series, [10, 12, 15]);
-  assert.equal(monotonic[0].sparkline.length, 3);
 });
 
 test('trends: a flat or decreasing series is not monotonic', () => {

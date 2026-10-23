@@ -1,5 +1,3 @@
-import { sparkline } from './sparkline.js';
-
 const TREND_METRICS = ['loc', 'duplicate_lines', 'open_findings'];
 const OPENED_EVENTS = ['opened', 'reopened'];
 const CLOSED_EVENTS = ['fixed', 'wontfix'];
@@ -79,7 +77,7 @@ function monotonicTrends(history, runs) {
       const series = window.map((snapshot) => indexByPath(snapshot.files)[path][metric]);
 
       if (isMonotonicIncreasing(series)) {
-        items.push({ type: 'monotonic', path, metric, series, sparkline: sparkline(series) });
+        items.push({ type: 'monotonic', path, metric, series });
       }
     }
   }
