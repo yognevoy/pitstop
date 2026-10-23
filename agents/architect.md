@@ -23,7 +23,12 @@ Compare the code to its own conventions, not to a textbook layered-architecture 
 
 ## Input
 
-Read `.pitstop/run/scope.json` in the current working directory. Its `files` array lists the paths in scope for this run, each with commit and change-line counts from recent history. Read those files, and follow their imports/callers with Grep/Glob as needed to see the module boundary or the spread of behavior; every finding must still anchor to at least one file from the scope list.
+Read `.pitstop/run/scope.json` in the current working directory. Check its `level` field first:
+
+- On any level other than `deep`, its `files` array is your working set: the paths in scope for this run, each with commit and change-line counts from recent history.
+- On a `deep` run, structural drift is often invisible from only the files that changed recently, so cover the whole repository instead: use Glob to find files yourself, skipping anything matching the same kind of paths `scope.json` already excludes elsewhere in this run (`node_modules/`, `dist/`, `build/`, `vendor/`, `migrations/`, lock files such as `package-lock.json`/`yarn.lock`, minified files) and anything listed in the project's own `.pitstopignore`, if one exists at the repo root.
+
+Read the relevant files, and follow their imports/callers with Grep/Glob as needed to see the module boundary or the spread of behavior; every finding must still anchor to at least one file you actually read.
 
 `.pitstop/run/baseline.json` maps a file path to the findings the user has already triaged as `wontfix` that touch it. For a file you're examining, check this map for its path; do not re-report something that is clearly the same problem as one of these.
 
