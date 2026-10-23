@@ -157,6 +157,23 @@ test('commitState: writes the metrics snapshot under .pitstop/metrics/<date>.jso
   }
 });
 
+test('commitState: writes each backfilled snapshot under its own .pitstop/metrics/<date>.json', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
+
+  try {
+    const backfill = [
+      { version: 1, sha: 'old1', date: '2026-09-01T00:00:00Z', files: [], totals: { open_findings: 0 } },
+      { version: 1, sha: 'old2', date: '2026-09-15T00:00:00Z', files: [], totals: { open_findings: 0 } },
+    ];
+    commitState(dir, params({ backfill }));
+
+    assert.deepEqual(JSON.parse(readFileSync(join(dir, '.pitstop/metrics/2026-09-01.json'), 'utf8')), backfill[0]);
+    assert.deepEqual(JSON.parse(readFileSync(join(dir, '.pitstop/metrics/2026-09-15.json'), 'utf8')), backfill[1]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('commitState: writes no metrics snapshot when omitted', () => {
   const dir = mkdtempSync(join(tmpdir(), 'pitstop-commit-'));
 

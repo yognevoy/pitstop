@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { writeAtomic } from './lib/atomic-write.js';
+import { backfillMetrics } from './lib/backfill.js';
 import { loadConfig } from './lib/config.js';
 import { detectDuplicates } from './lib/duplication.js';
 import { git } from './lib/git.js';
@@ -14,7 +15,7 @@ import { trends } from './lib/trends.js';
  * snapshot, and the trends data atomically. Called only after every earlier
  * step has already succeeded.
  */
-export function commitState(dir, { report: reportText, run, pluginVersion, registry = [], metrics: metricsSnapshot = null, trends: trendsData = null }) {
+export function commitState(dir, { report: reportText, run, pluginVersion, registry = [], metrics: metricsSnapshot = null, trends: trendsData = null, backfill = [] }) {
   const pitstopDir = join(dir, '.pitstop');
   const reportPath = join(pitstopDir, 'reports', `${run.date.slice(0, 10)}.md`);
   const statePath = join(pitstopDir, 'state.json');
@@ -38,11 +39,18 @@ export function commitState(dir, { report: reportText, run, pluginVersion, regis
 
   let metricsPath = null;
 
-  if (metricsSnapshot) {
+  if (metricsSnapshot || backfill.length > 0) {
     const metricsDir = join(pitstopDir, 'metrics');
     mkdirSync(metricsDir, { recursive: true });
-    metricsPath = join(metricsDir, `${run.date.slice(0, 10)}.json`);
-    writeAtomic(metricsPath, JSON.stringify(metricsSnapshot, null, 2));
+
+    for (const snapshot of backfill) {
+      writeAtomic(join(metricsDir, `${snapshot.date.slice(0, 10)}.json`), JSON.stringify(snapshot, null, 2));
+    }
+
+    if (metricsSnapshot) {
+      metricsPath = join(metricsDir, `${run.date.slice(0, 10)}.json`);
+      writeAtomic(metricsPath, JSON.stringify(metricsSnapshot, null, 2));
+    }
   }
 
   if (trendsData) {
@@ -92,7 +100,15 @@ function main() {
     files: metrics(dir, scope.files, registry, duplicatesByFile),
     totals: { open_findings: registry.filter((record) => record.status === 'open').length },
   };
-  const history = [...readMetricsHistory(dir), metricsSnapshot];
+
+  const existingHistory = readMetricsHistory(dir);
+  let backfill = [];
+
+  if (existingHistory.length === 0 && scope.files.length > 0) {
+    backfill = backfillMetrics(dir, scope.files.map((file) => file.path));
+  }
+
+  const history = [...backfill, ...existingHistory, metricsSnapshot];
   const trendsData = trends(history, registry, previousRunDate);
 
   const { reportPath, statePath } = commitState(dir, {
@@ -102,6 +118,7 @@ function main() {
     registry,
     metrics: metricsSnapshot,
     trends: trendsData,
+    backfill,
   });
 
   console.log(`Wrote ${reportPath} and updated ${statePath}.`);
