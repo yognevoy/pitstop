@@ -1,5 +1,3 @@
-import { sparkline } from './sparkline.js';
-
 const TREND_METRICS = ['loc', 'duplicate_lines', 'open_findings'];
 const OPENED_EVENTS = ['opened', 'reopened'];
 const CLOSED_EVENTS = ['fixed', 'wontfix'];
@@ -19,7 +17,10 @@ export function trends(history, registry, previousRunDate, options = {}) {
   const growthThreshold = options.growthThreshold ?? 0.3;
   const monotonicRuns = options.monotonicRuns ?? 3;
 
-  const items = [...growthTrends(history, growthThreshold), ...monotonicTrends(history, monotonicRuns)];
+  const items = [
+    ...growthTrends(history, growthThreshold),
+    ...monotonicTrends(history, monotonicRuns),
+  ];
   const burnDown = burnDownTrend(registry, previousRunDate);
 
   if (burnDown) {
@@ -76,10 +77,13 @@ function monotonicTrends(history, runs) {
 
   for (const path of paths) {
     for (const metric of TREND_METRICS) {
-      const series = window.map((snapshot) => indexByPath(snapshot.files)[path][metric]);
+      const windowSeries = window.map((snapshot) => indexByPath(snapshot.files)[path][metric]);
 
-      if (isMonotonicIncreasing(series)) {
-        items.push({ type: 'monotonic', path, metric, series, sparkline: sparkline(series) });
+      if (isMonotonicIncreasing(windowSeries)) {
+        const series = history
+          .map((snapshot) => indexByPath(snapshot.files)[path]?.[metric])
+          .filter((value) => value !== undefined);
+        items.push({ type: 'monotonic', path, metric, series });
       }
     }
   }

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { writeAtomic } from './lib/atomic-write.js';
 import { backfillMetrics } from './lib/backfill.js';
+import { renderChart } from './lib/chart.js';
 import { loadConfig } from './lib/config.js';
 import { detectDuplicates } from './lib/duplication.js';
 import { git } from './lib/git.js';
@@ -109,7 +110,7 @@ function main() {
   }
 
   const history = [...backfill, ...existingHistory, metricsSnapshot];
-  const trendsData = trends(history, registry, previousRunDate);
+  const trendsData = attachCharts(dir, run, trends(history, registry, previousRunDate));
 
   const { reportPath, statePath } = commitState(dir, {
     report: reportText,
@@ -122,6 +123,27 @@ function main() {
   });
 
   console.log(`Wrote ${reportPath} and updated ${statePath}.`);
+}
+
+function attachCharts(dir, run, trendsData) {
+  const date = run.date.slice(0, 10);
+  const chartsDir = join(dir, '.pitstop/charts');
+
+  return trendsData.map((item) => {
+    if (item.type !== 'monotonic') {
+      return item;
+    }
+
+    const safePath = item.path.replace(/[^a-zA-Z0-9.-]+/g, '_');
+    const filename = `${date}-${item.metric}-${safePath}.png`;
+    const ok = renderChart(item.series, join(chartsDir, filename), { label: item.metric });
+
+    if (!ok) {
+      return item;
+    }
+
+    return { ...item, chart: `../charts/${filename}` };
+  });
 }
 
 function readPreviousRunDate(dir) {
