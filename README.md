@@ -20,7 +20,7 @@ It picks hot files straight from git history (how often they change, how big the
 **Claude Code**, from inside a session in any project:
 
 ```
-/plugin marketplace add /path/to/pitstop
+/plugin marketplace add yognevoy/pitstop
 /plugin install pitstop@pitstop
 ```
 
