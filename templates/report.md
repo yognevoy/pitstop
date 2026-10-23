@@ -1,9 +1,6 @@
-# Pitstop report
+# Pitstop report — {{date}}
 
-- Period: {{period}}
-- Base: {{base}}
-- Level: {{level}}
-- Files in scope: {{file_count}}
+**{{file_count}} files** since {{period}} ({{base}}) · {{finding_summary}}
 
 {{findings}}
 

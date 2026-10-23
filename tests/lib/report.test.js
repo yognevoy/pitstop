@@ -35,24 +35,56 @@ function finding(overrides = {}) {
 test('report: fills in the header from scope metadata', () => {
   const text = report(template, scope(), [], 5);
 
-  assert.match(text, /Period: a3f9e1c\.\.HEAD/);
-  assert.match(text, /Base: last run commit a3f9e1c is an ancestor of HEAD/);
-  assert.match(text, /Level: full/);
-  assert.match(text, /Files in scope: 1/);
+  assert.match(text, /# Pitstop report — 2026-10-19/);
+  assert.match(text, /\*\*1 files\*\* since a3f9e1c\.\.HEAD \(last run commit a3f9e1c is an ancestor of HEAD\)/);
 });
 
 test('report: describes the period as a since range on a fallback base', () => {
   const fallback = scope({ base: { method: 'fallback', base: null, since: '4 weeks ago', reason: 'no previous run recorded' } });
   const text = report(template, fallback, [], 5);
 
-  assert.match(text, /Period: 4 weeks ago → HEAD/);
-  assert.match(text, /Base: no previous run recorded/);
+  assert.match(text, /since 4 weeks ago → HEAD \(no previous run recorded\)/);
+});
+
+test('report: summarizes the finding count and severity breakdown', () => {
+  const findings = [finding({ severity: 'must' }), finding({ severity: 'should' }), finding({ severity: 'should' })];
+  const text = report(template, scope(), findings, 5);
+
+  assert.match(text, /\*\*3 findings\*\* \(1 must, 2 should\)/);
+});
+
+test('report: omits a severity with zero findings from the breakdown', () => {
+  const findings = [finding({ severity: 'should' })];
+  const text = report(template, scope(), findings, 5);
+
+  assert.match(text, /\*\*1 finding\*\* \(1 should\)/);
+  assert.doesNotMatch(text, /must|nice/);
+});
+
+test('report: groups findings under a Must fix / Should fix / Nice to have heading', () => {
+  const findings = [finding({ title: 'A must', severity: 'must' }), finding({ title: 'A nice', severity: 'nice' })];
+  const text = report(template, scope(), findings, 5);
+
+  assert.match(text, /## Must fix\n\n### 1\. A must/);
+  assert.match(text, /## Nice to have\n\n### 2\. A nice/);
+  assert.doesNotMatch(text, /## Should fix/);
+});
+
+test('report: numbers findings continuously across severity groups, in severity order', () => {
+  const findings = [
+    finding({ title: 'A should', severity: 'should' }),
+    finding({ title: 'A must', severity: 'must' }),
+  ];
+  const text = report(template, scope(), findings, 5);
+
+  assert.match(text, /### 1\. A must/);
+  assert.match(text, /### 2\. A should/);
 });
 
 test('report: renders each top finding with its what/problem/fix/if_skipped', () => {
   const text = report(template, scope(), [finding()], 5);
 
-  assert.match(text, /### VAT calculation is duplicated/);
+  assert.match(text, /### 1\. VAT calculation is duplicated/);
   assert.match(text, /\*duplication · should · effort S\*/);
   assert.match(text, /\*\*What:\*\* VAT is computed inline in two places\./);
   assert.match(text, /\*\*Problem:\*\* A rate change has to be made twice\./);
@@ -74,9 +106,9 @@ test('report: only shows the top K findings and reports the rest as cut, plurali
 
   const text = report(template, scope(), findings, 1);
 
-  assert.match(text, /### A/);
-  assert.doesNotMatch(text, /### B/);
-  assert.doesNotMatch(text, /### C/);
+  assert.match(text, /A$/m);
+  assert.doesNotMatch(text, /\bB\b/);
+  assert.doesNotMatch(text, /\bC\b/);
   assert.match(text, /2 more findings below the cut\./);
 });
 
