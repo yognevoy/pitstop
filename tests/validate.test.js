@@ -88,6 +88,22 @@ test('validate: rejects a finding whose anchor file does not exist', () => {
   }
 });
 
+test('validate: accepts a "Class::method" anchor symbol when the bare method name exists', () => {
+  const repo = createFixtureRepo();
+
+  try {
+    writeFileSync(join(repo.dir, 'tax.js'), 'function calcVat() {}\n');
+    const finding = validFinding({ anchors: [{ file: 'tax.js', symbols: ['TaxHelper::calcVat'] }] });
+    writeRaw(repo.dir, 'simplifier', [finding]);
+
+    const result = validate(repo.dir, schema);
+    assert.equal(result.valid.length, 1);
+    assert.deepEqual(result.rejected, []);
+  } finally {
+    repo.cleanup();
+  }
+});
+
 test('validate: rejects a finding whose anchor symbol does not occur in the file', () => {
   const repo = createFixtureRepo();
 

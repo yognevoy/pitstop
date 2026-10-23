@@ -87,7 +87,12 @@ function checkAnchor(dir, anchor) {
   }
 
   const content = readFileSync(path, 'utf8');
-  const found = anchor.symbols.some((symbol) => content.includes(symbol));
+  // "Class::method"/"Class->method" won't appear at the definition site; try the bare name too.
+  const found = anchor.symbols.some((symbol) => {
+    const bare = symbol.split(/::|->/).pop();
+
+    return content.includes(symbol) || (bare !== symbol && content.includes(bare));
+  });
 
   if (!found) {
     return `no symbol in ${JSON.stringify(anchor.symbols)} found in "${anchor.file}"`;
