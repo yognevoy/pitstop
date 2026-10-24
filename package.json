@@ -1,6 +1,6 @@
 {
   "name": "pitstop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scheduled maintenance for AI codebases. Catches the drift reviews miss and lines it up.",
   "type": "module",
   "license": "MIT",
