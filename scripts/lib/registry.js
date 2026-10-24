@@ -51,6 +51,16 @@ export function store(existing, findings, run) {
   return result;
 }
 
+// Keeps a finding unless its matching record fails isIncluded.
+export function selectFindings(findings, registry, isIncluded) {
+  const recordsById = new Map(registry.map((record) => [record.id, record]));
+
+  return findings.filter((finding) => {
+    const record = recordsById.get(recordId(finding.category, finding.anchors));
+    return !record || isIncluded(record);
+  });
+}
+
 // Groups records matching isMatch by anchor file, for files in this run's scope.
 export function scoped(records, isMatch, scopeFiles) {
   const scopeSet = new Set(scopeFiles);

@@ -8,7 +8,7 @@ import { detectDuplicates } from './lib/duplication.js';
 import { git } from './lib/git.js';
 import { metrics } from './lib/metrics.js';
 import { report } from './lib/report.js';
-import { read, store } from './lib/registry.js';
+import { read, selectFindings, store } from './lib/registry.js';
 import { trends } from './lib/trends.js';
 
 /**
@@ -79,7 +79,10 @@ function main() {
   const configSchema = JSON.parse(readFileSync(configSchemaPath));
 
   const config = loadConfig(dir, configSchema);
-  const reportText = report(template, scope, scored, config.report_top_k);
+  const prior = read(dir);
+  const isNotDismissed = (record) => record.status !== 'wontfix' && record.status !== 'fixed';
+  const reportable = selectFindings(scored, prior, isNotDismissed);
+  const reportText = report(template, scope, reportable, config.report_top_k);
   const run = {
     sha: git(dir, ['rev-parse', 'HEAD']).trim(),
     date: scope.generated_at,
@@ -90,7 +93,7 @@ function main() {
   // per-run (hotspot and seen_count shift between runs), not part of the
   // persisted finding.
   const contentFindings = scored.map(({ score, score_detail, ...finding }) => finding);
-  const registry = store(read(dir), contentFindings, run);
+  const registry = store(prior, contentFindings, run);
 
   const previousRunDate = readPreviousRunDate(dir);
   const duplicatesByFile = detectDuplicates(dir, scope.files.map((file) => file.path));

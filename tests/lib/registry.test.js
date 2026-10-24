@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scoped, setStatus, store } from '../../scripts/lib/registry.js';
+import { scoped, selectFindings, setStatus, store } from '../../scripts/lib/registry.js';
 
 const RUN_1 = { date: '2026-10-19T10:00:00Z', sha: 'a3f9e1c' };
 const RUN_2 = { date: '2026-10-26T10:00:00Z', sha: 'b7c2d4e' };
@@ -271,4 +271,50 @@ test('setStatus: does not mutate its input records', () => {
   setStatus(opened, opened[0].id, 'fixed', { today: TODAY });
 
   assert.deepEqual(opened, snapshot);
+});
+
+const isNotDismissed = (record) => record.status !== 'wontfix' && record.status !== 'fixed';
+
+test('selectFindings: drops a finding re-detected after being marked wontfix', () => {
+  const opened = store([], [finding()], RUN_1);
+  const wontfixed = setStatus(opened, opened[0].id, 'wontfix', { reason: 'known tradeoff', today: TODAY });
+
+  assert.deepEqual(selectFindings([finding()], wontfixed, isNotDismissed), []);
+});
+
+test('selectFindings: drops a finding re-detected after being marked fixed', () => {
+  const opened = store([], [finding()], RUN_1);
+  const fixed = setStatus(opened, opened[0].id, 'fixed', { today: TODAY });
+
+  assert.deepEqual(selectFindings([finding()], fixed, isNotDismissed), []);
+});
+
+test('selectFindings: keeps an open finding', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  assert.deepEqual(selectFindings([finding()], opened, isNotDismissed), [finding()]);
+});
+
+test('selectFindings: keeps a finding with no matching registry record', () => {
+  assert.deepEqual(selectFindings([finding()], [], isNotDismissed), [finding()]);
+});
+
+test('selectFindings: matches by category and anchor files, ignoring symbols', () => {
+  const opened = store([], [finding()], RUN_1);
+  const wontfixed = setStatus(opened, opened[0].id, 'wontfix', { reason: 'known tradeoff', today: TODAY });
+  const reworded = finding({
+    title: 'Different wording for the same VAT duplication',
+    anchors: [
+      { file: 'services/billing/tax.ts', symbols: ['otherSymbol'] },
+      { file: 'services/invoices/total.ts', symbols: [] },
+    ],
+  });
+
+  assert.deepEqual(selectFindings([reworded], wontfixed, isNotDismissed), []);
+});
+
+test('selectFindings: a predicate that rejects everything drops an open finding too', () => {
+  const opened = store([], [finding()], RUN_1);
+
+  assert.deepEqual(selectFindings([finding()], opened, () => false), []);
 });
