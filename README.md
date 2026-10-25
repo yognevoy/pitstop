@@ -64,6 +64,18 @@ Optional. Create `.pitstop/config.json` at the root of your project to override 
 
 You can set just the fields you want to change; everything else keeps its default.
 
+### Ignoring files
+
+Common lockfiles and build output are skipped by default. Add a `.pitstopignore` at the root of your project to exclude more:
+
+```
+*.generated.ts
+vendor/
+fixtures/
+```
+
+These patterns are merged with the built-in ignore list.
+
 ## Scoring
 
 Findings are ranked by a score:
