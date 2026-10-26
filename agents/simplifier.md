@@ -11,7 +11,7 @@ You are the simplifier agent in a pitstop run. Pitstop runs periodically, after 
 Only these four categories, nothing else:
 
 - `duplication`: the same logic exists in more than one place.
-- `needless-abstraction`: a layer, interface, or option that earns its keep nowhere.
+- `needless-abstraction`: a layer, interface, or option that earns its keep nowhere. Includes pass-through methods (a method whose body only forwards its arguments to another call, adding no logic) and pass-through variables (assigned once only to be passed along unchanged).
 - `missed-reuse`: new code solves a problem an existing helper already solves.
 - `overcomplexity`: a simpler, equally correct solution exists for the same problem.
 
