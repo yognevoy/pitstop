@@ -83,13 +83,13 @@ test('existsAtHead: false for a file removed in a later commit', () => {
 });
 
 test('scopePathspecs: a trailing run of "!dir/" after a bare "*" narrows to those directories', () => {
-  assert.deepEqual(scopePathspecs(['vendor/', '*', '!local/']), ['local/']);
-  assert.deepEqual(scopePathspecs(['vendor/', '*', '!local/', '!shared/']), ['shared/', 'local/']);
+  assert.deepEqual(scopePathspecs(['vendor/', '*', '!src/']), ['src/']);
+  assert.deepEqual(scopePathspecs(['vendor/', '*', '!src/', '!shared/']), ['shared/', 'src/']);
 });
 
 test('scopePathspecs: no narrowing without a trailing "*" right before the negations', () => {
   assert.deepEqual(scopePathspecs(['vendor/', 'fixtures/', '!vendor/patches/']), []);
-  assert.deepEqual(scopePathspecs(['!local/']), []);
+  assert.deepEqual(scopePathspecs(['!src/']), []);
   assert.deepEqual(scopePathspecs(['*']), []);
   assert.deepEqual(scopePathspecs([]), []);
 });
