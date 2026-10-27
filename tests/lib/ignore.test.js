@@ -46,6 +46,22 @@ test('isIgnored: true if any pattern in the list matches', () => {
   assert.equal(isIgnored('src/index.js', BUILTIN_IGNORE), false);
 });
 
+test('isIgnored: a later "!" pattern re-includes a path an earlier pattern ignored', () => {
+  assert.equal(isIgnored('vendor/local/a.js', ['vendor/', '!vendor/local/']), false);
+  assert.equal(isIgnored('vendor/other/a.js', ['vendor/', '!vendor/local/']), true);
+});
+
+test('isIgnored: a later plain pattern re-ignores a path a "!" already re-included', () => {
+  assert.equal(
+    isIgnored('vendor/local/a.min.js', ['vendor/', '!vendor/local/', '*.min.js']),
+    true,
+  );
+});
+
+test('isIgnored: "!" on a pattern that never matched has no effect', () => {
+  assert.equal(isIgnored('src/index.js', ['!dist/']), false);
+});
+
 test('parsePitstopIgnore: strips comments and blank lines', () => {
   const content = '# comment\n\nsrc/generated/\n  *.secret  \n';
   assert.deepEqual(parsePitstopIgnore(content), ['src/generated/', '*.secret']);
@@ -81,6 +97,20 @@ test('filterScope: drops deleted, built-in-ignored, and extra-pattern-ignored fi
     const result = filterScope(repo.dir, candidates, ['secrets/']);
 
     assert.deepEqual(result, ['kept.js']);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test('filterScope: an extra "!" pattern can re-include a path a builtin pattern ignores', () => {
+  const repo = createFixtureRepo();
+  try {
+    repo.commit({ 'vendor/kept.js': 'x', 'vendor/other.js': 'x' });
+
+    const candidates = ['vendor/kept.js', 'vendor/other.js'];
+    const result = filterScope(repo.dir, candidates, ['!vendor/kept.js']);
+
+    assert.deepEqual(result, ['vendor/kept.js']);
   } finally {
     repo.cleanup();
   }

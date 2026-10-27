@@ -48,7 +48,22 @@ function toRegex(pattern) {
 }
 
 export function isIgnored(path, patterns) {
-  return patterns.some((pattern) => matchesPattern(path, pattern));
+  let ignored = false;
+
+  for (const pattern of patterns) {
+    const negate = pattern.startsWith('!');
+    let bare = pattern;
+
+    if (negate) {
+      bare = pattern.slice(1);
+    }
+
+    if (matchesPattern(path, bare)) {
+      ignored = !negate;
+    }
+  }
+
+  return ignored;
 }
 
 /** Parses `.pitstopignore` content into a list of patterns. */
@@ -82,19 +97,13 @@ export function existsAtHead(dir, path) {
  * and from ignore list.
  */
 export function filterScope(dir, paths, extraPatterns = []) {
+  const patterns = [...BUILTIN_IGNORE, ...extraPatterns];
+
   return paths.filter((path) => {
     if (!existsAtHead(dir, path)) {
       return false;
     }
 
-    if (isIgnored(path, BUILTIN_IGNORE)) {
-      return false;
-    }
-
-    if (isIgnored(path, extraPatterns)) {
-      return false;
-    }
-
-    return true;
+    return !isIgnored(path, patterns);
   });
 }
