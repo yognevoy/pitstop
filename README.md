@@ -72,6 +72,8 @@ Common lockfiles and build output are skipped by default. Add a `.pitstopignore`
 *.generated.ts
 vendor/
 fixtures/
+scripts/
+!scripts/deploy.sh
 ```
 
 These patterns are merged with the built-in ignore list.
