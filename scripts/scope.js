@@ -5,7 +5,7 @@ import { base } from './lib/base.js';
 import { DEFAULT_CONFIG, loadConfig } from './lib/config.js';
 import { git } from './lib/git.js';
 import { churn } from './lib/churn.js';
-import { filterScope, parsePitstopIgnore } from './lib/ignore.js';
+import { BUILTIN_IGNORE, filterScope, parsePitstopIgnore, scopePathspecs } from './lib/ignore.js';
 import { rankChurn } from './lib/rank-churn.js';
 import { read, scoped } from './lib/registry.js';
 
@@ -25,8 +25,9 @@ export function scope(dir, level, config = DEFAULT_CONFIG) {
     range = [`--since=${result.since}`, 'HEAD'];
   }
 
-  const churned = churn(dir, range);
   const extraPatterns = readPitstopIgnore(dir);
+  const pathspecs = scopePathspecs([...BUILTIN_IGNORE, ...extraPatterns]);
+  const churned = churn(dir, range, pathspecs);
   const kept = filterScope(dir, Object.keys(churned), extraPatterns);
 
   const keptChurn = {};

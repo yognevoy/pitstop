@@ -55,6 +55,18 @@ test('churn: attributes a rename to the new path', () => {
   }
 });
 
+test('churn: a pathspec narrows the result to files under that directory', () => {
+  const repo = createFixtureRepo();
+  try {
+    repo.commit({ 'local/a.txt': 'one', 'vendor/b.txt': 'one' });
+
+    const result = churn(repo.dir, ['HEAD'], ['local/']);
+    assert.deepEqual(Object.keys(result), ['local/a.txt']);
+  } finally {
+    repo.cleanup();
+  }
+});
+
 test('churn: returns an empty result for an empty range', () => {
   const repo = createFixtureRepo();
   try {

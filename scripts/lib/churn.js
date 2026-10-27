@@ -5,8 +5,9 @@ import { git } from './git.js';
  * number of distinct commits that touched the file, and the total lines
  * added/deleted across those commits.
  */
-export function churn(dir, range) {
-  const out = git(dir, ['log', '-M', '--no-merges', '--numstat', '--format=%x00', ...range]);
+export function churn(dir, range, pathspecs = []) {
+  const scope = pathspecs.length ? ['--', ...pathspecs] : [];
+  const out = git(dir, ['log', '-M', '--no-merges', '--numstat', '--format=%x00', ...range, ...scope]);
   const files = {};
 
   for (const block of out.split('\0').slice(1)) {
