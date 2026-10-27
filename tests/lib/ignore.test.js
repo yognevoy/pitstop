@@ -6,6 +6,7 @@ import {
   parsePitstopIgnore,
   existsAtHead,
   filterScope,
+  scopePathspecs,
   BUILTIN_IGNORE,
 } from '../../scripts/lib/ignore.js';
 import { createFixtureRepo } from '../helpers/fixture-repo.js';
@@ -79,6 +80,18 @@ test('existsAtHead: false for a file removed in a later commit', () => {
   } finally {
     repo.cleanup();
   }
+});
+
+test('scopePathspecs: a trailing run of "!dir/" after a bare "*" narrows to those directories', () => {
+  assert.deepEqual(scopePathspecs(['vendor/', '*', '!local/']), ['local/']);
+  assert.deepEqual(scopePathspecs(['vendor/', '*', '!local/', '!shared/']), ['shared/', 'local/']);
+});
+
+test('scopePathspecs: no narrowing without a trailing "*" right before the negations', () => {
+  assert.deepEqual(scopePathspecs(['vendor/', 'fixtures/', '!vendor/patches/']), []);
+  assert.deepEqual(scopePathspecs(['!local/']), []);
+  assert.deepEqual(scopePathspecs(['*']), []);
+  assert.deepEqual(scopePathspecs([]), []);
 });
 
 test('filterScope: drops deleted, built-in-ignored, and extra-pattern-ignored files', () => {

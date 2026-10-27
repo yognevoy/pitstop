@@ -73,6 +73,27 @@ export function isIgnored(path, patterns) {
   return ignored;
 }
 
+/**
+ * Directories safe to narrow git log to, since everything outside them
+ * is ignored. Empty array otherwise.
+ */
+export function scopePathspecs(patterns) {
+  const dirs = [];
+
+  for (let i = patterns.length - 1; i >= 0; i--) {
+    const pattern = patterns[i];
+
+    if (pattern.startsWith('!') && pattern.endsWith('/')) {
+      dirs.push(pattern.slice(1));
+      continue;
+    }
+
+    return pattern.trim() === '*' ? dirs : [];
+  }
+
+  return [];
+}
+
 /** Parses `.pitstopignore` content into a list of patterns. */
 export function parsePitstopIgnore(content) {
   const lines = content.split('\n');
