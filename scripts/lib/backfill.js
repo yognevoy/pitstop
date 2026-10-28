@@ -19,7 +19,7 @@ export function backfillMetrics(dir, paths) {
     const worktreeDir = join(base, 'wt');
 
     try {
-      git(dir, ['worktree', 'add', '--detach', worktreeDir, sha]);
+      git(dir, ['worktree', 'add', '--detach', '--no-checkout', worktreeDir, sha]);
       const presentPaths = paths.filter((path) => existsAtHead(worktreeDir, path));
       const scopeFiles = presentPaths.map((path) => ({ path, commits: 0, added: 0, deleted: 0 }));
       const duplicatesByFile = detectDuplicates(worktreeDir, presentPaths);
