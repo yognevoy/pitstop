@@ -133,6 +133,43 @@ function burnDownTrend(registry, previousRunDate) {
   return { type: 'burn_down', opened, closed, open_total: openTotal };
 }
 
+/**
+ * Picks up to maxCount trends, by priority (burn_down, then growth, then
+ * monotonic).
+ */
+const TREND_PRIORITY = { burn_down: 0, growth: 1, monotonic: 2 };
+
+export function topTrends(items, { maxCount = 3 } = {}) {
+  const ranked = items
+    .filter((item) => item.type !== 'burn_down' || item.opened > 0 || item.closed > 0)
+    .sort((a, b) => {
+      if (TREND_PRIORITY[a.type] !== TREND_PRIORITY[b.type]) {
+        return TREND_PRIORITY[a.type] - TREND_PRIORITY[b.type];
+      }
+
+      if (a.type === 'growth' && a.growth !== b.growth) {
+        return b.growth - a.growth;
+      }
+
+      return a.path.localeCompare(b.path);
+    });
+
+  const selected = ranked.slice(0, maxCount);
+  const hasChart = selected.some((item) => {
+    return item.chart;
+  });
+
+  const chartable = !hasChart && ranked.find((item) => {
+    return item.chart && !selected.includes(item);
+  });
+
+  if (chartable) {
+    selected[selected.length - 1] = chartable;
+  }
+
+  return selected;
+}
+
 function indexByPath(files) {
   const map = {};
 

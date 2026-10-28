@@ -28,6 +28,6 @@ If a step that runs a script fails (exits non-zero), stop immediately and tell t
 
 6. **Score and commit.** Run `node scripts/score.js`, then `node scripts/commit-state.js`. Writes `.pitstop/reports/<date>.md`, `.pitstop/state.json`, this run's `.pitstop/metrics/<date>.json`, and `.pitstop/run/trends.json`.
 
-7. **Report trends.** Read `.pitstop/run/trends.json`. If `[]`, skip. Otherwise pick 2-3 worth mentioning (prefer `burn_down`, then the largest `growth`, then `monotonic`) and append a `## Trends` section to the report file from step 6, one sentence per trend, citing its numbers directly — don't invent numbers not in the data, and skip a trend with no real change.
+7. **Report trends.** Read `.pitstop/run/trends.json`. If `[]`, skip. Otherwise it already holds the trends worth mentioning, picked and ordered by `commit-state.js`: append a `## Trends` section to the report file from step 6, one sentence per entry in that order, citing its numbers directly — don't invent numbers not in the data. For an entry with a `chart` field, embed it as a markdown image (`![<metric> trend for <path>](<chart>)`).
 
 8. **Tell the user** the report's path and a one-line summary (files in scope, how many findings made the report). Don't paste the full report into the conversation.
