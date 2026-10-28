@@ -17,7 +17,7 @@ pitstop is the crew chief for your codebase. It doesn't watch every lap: it wait
 
 ## How it works
 
-It picks hot files straight from git history (how often they change, how big the change) and reviews them for the drift a normal review misses: duplication, abstractions nobody needed, module boundaries that quietly blurred. The output is a short report.
+It deterministically picks hot files straight from git history (how often they change, how big the change) and reviews them for the drift a normal review misses: duplication, abstractions nobody needed, module boundaries that quietly blurred. The output is a short report.
 
 ## Install
 
