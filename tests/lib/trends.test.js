@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { trends } from '../../scripts/lib/trends.js';
+import { topTrends, trends } from '../../scripts/lib/trends.js';
 
 function file(overrides = {}) {
   return { path: 'a.js', loc: 10, duplicate_lines: 0, open_findings: 0, ...overrides };
@@ -109,4 +109,81 @@ test('trends: burn-down ignores events at or before the previous run date', () =
 test('trends: no burn-down entry without a previous run date', () => {
   const result = trends([snapshot([file()])], [record([{ date: '2026-01-05', event: 'opened' }])], null);
   assert.equal(result.some((item) => item.type === 'burn_down'), false);
+});
+
+test('topTrends: orders burn_down, then growth descending, then monotonic', () => {
+  const items = [
+    { type: 'growth', path: 'b.js', metric: 'loc', from: 10, to: 20, growth: 1 },
+    { type: 'monotonic', path: 'c.js', metric: 'loc', series: [1, 2, 3] },
+    { type: 'burn_down', opened: 2, closed: 1, open_total: 3 },
+    { type: 'growth', path: 'a.js', metric: 'loc', from: 10, to: 30, growth: 2 },
+  ];
+
+  const result = topTrends(items, { maxCount: 4 });
+
+  assert.deepEqual(result.map((item) => item.type + ':' + (item.path ?? '')), [
+    'burn_down:',
+    'growth:a.js',
+    'growth:b.js',
+    'monotonic:c.js',
+  ]);
+});
+
+test('topTrends: caps at maxCount', () => {
+  const items = [
+    { type: 'growth', path: 'a.js', metric: 'loc', from: 10, to: 30, growth: 2 },
+    { type: 'growth', path: 'b.js', metric: 'loc', from: 10, to: 20, growth: 1 },
+    { type: 'monotonic', path: 'c.js', metric: 'loc', series: [1, 2, 3] },
+  ];
+
+  assert.equal(topTrends(items, { maxCount: 2 }).length, 2);
+});
+
+test('topTrends: drops a burn_down entry with no real change', () => {
+  const items = [{ type: 'burn_down', opened: 0, closed: 0, open_total: 3 }];
+  assert.deepEqual(topTrends(items), []);
+});
+
+test('topTrends: swaps the lowest-priority pick for a chart-bearing monotonic trend when none of the picks has one', () => {
+  const items = [
+    { type: 'growth', path: 'a.js', metric: 'loc', from: 10, to: 30, growth: 2 },
+    { type: 'growth', path: 'b.js', metric: 'loc', from: 10, to: 20, growth: 1 },
+    { type: 'monotonic', path: 'c.js', metric: 'loc', series: [1, 2, 3], chart: '../charts/c.png' },
+  ];
+
+  const result = topTrends(items, { maxCount: 2 });
+
+  assert.deepEqual(result.map((item) => item.path), ['a.js', 'c.js']);
+});
+
+test('topTrends: does not swap when a pick already has a chart', () => {
+  const items = [
+    { type: 'growth', path: 'a.js', metric: 'loc', from: 10, to: 30, growth: 2 },
+    { type: 'monotonic', path: 'b.js', metric: 'loc', series: [1, 2, 3], chart: '../charts/b.png' },
+    { type: 'monotonic', path: 'c.js', metric: 'loc', series: [1, 2, 3], chart: '../charts/c.png' },
+  ];
+
+  const result = topTrends(items, { maxCount: 2 });
+
+  assert.deepEqual(result.map((item) => item.path), ['a.js', 'b.js']);
+});
+
+test('topTrends: leaves the selection unchanged when no monotonic entry has a chart', () => {
+  const items = [
+    { type: 'growth', path: 'a.js', metric: 'loc', from: 10, to: 30, growth: 2 },
+    { type: 'monotonic', path: 'b.js', metric: 'loc', series: [1, 2, 3] },
+  ];
+
+  const result = topTrends(items, { maxCount: 2 });
+
+  assert.deepEqual(result.map((item) => item.path), ['a.js', 'b.js']);
+});
+
+test('topTrends: growth ties are broken by path', () => {
+  const items = [
+    { type: 'growth', path: 'z.js', metric: 'loc', from: 10, to: 20, growth: 1 },
+    { type: 'growth', path: 'a.js', metric: 'loc', from: 10, to: 20, growth: 1 },
+  ];
+
+  assert.deepEqual(topTrends(items, { maxCount: 2 }).map((item) => item.path), ['a.js', 'z.js']);
 });

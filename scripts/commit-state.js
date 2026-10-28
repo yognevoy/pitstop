@@ -9,7 +9,7 @@ import { git } from './lib/git.js';
 import { metrics } from './lib/metrics.js';
 import { report } from './lib/report.js';
 import { read, selectFindings, store } from './lib/registry.js';
-import { trends } from './lib/trends.js';
+import { topTrends, trends } from './lib/trends.js';
 
 /**
  * Writes the report, the new state.json, the registry, the metrics
@@ -113,7 +113,9 @@ function main() {
   }
 
   const history = [...backfill, ...existingHistory, metricsSnapshot];
-  const trendsData = attachCharts(dir, run, trends(history, registry, previousRunDate));
+  const trendsData = topTrends(
+    attachCharts(dir, run, trends(history, registry, previousRunDate))
+  );
 
   const { reportPath, statePath } = commitState(dir, {
     report: reportText,
