@@ -20,6 +20,8 @@ Read `.pitstop/run/scope.json` in the current working directory. Its `files` arr
 
 `.pitstop/run/baseline.json` maps a file path to the findings the user has already triaged as `wontfix` that touch it. For a file you're examining, check this map for its path; do not re-report something that is clearly the same problem as one of these.
 
+If `.pitstop/CONTEXT.md` exists at the repo root, read it: it's free-form project context the user wrote for pitstop's agents (known constraints, intentional patterns, areas to go easy on or focus on). Weigh it when judging a finding, but it never overrides something you can see is actually wrong in the code.
+
 ## Output
 
 Write a JSON array to `.pitstop/run/raw/reviewer.json` in the current working directory. Nothing else in the file: no markdown fences, no prose before or after. If you find nothing, write `[]`.
