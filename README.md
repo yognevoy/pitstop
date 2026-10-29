@@ -78,6 +78,10 @@ scripts/
 
 These patterns are merged with the built-in ignore list.
 
+### Project context
+
+Add a `.pitstop/CONTEXT.md` at the root of your project to give the review agents free-form context: known constraints, intentional patterns, areas to go easy on or focus on. Each agent reads it if present and weighs it when judging a finding, but it never overrides something clearly wrong in the code.
+
 ## Scoring
 
 Findings are ranked by a score:
